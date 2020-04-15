@@ -6,6 +6,7 @@ Cron jobs are set up from environment variables, and not copied to the container
 
 You need to set up "CRONJOB" environment variables, there can be multiple of this variables. "CRONJOB1", "CRONJOB2", e.t. They all need to start with "CRONJOB". Cron logs and jobs output can be found in docker logs.
 
+There are branches for Alpine and Debian Buster. 
 
 All variables supported by the container:
 
