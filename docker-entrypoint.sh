@@ -8,28 +8,35 @@ IFS=":" read -r SMTP_HOSTNAME SMTP_PORT <<< "$SMTP_HOST"
 SMTP_PORT=${SMTP_PORT:-25}
 
 # Writing to crontab file.
-cat > "/etc/crontabs/root" <<EOF
+cat > "/var/spool/cron/crontabs/root" <<EOF
 MAILTO=${CRON_MAILTO}
 
 ${CRONJOBS}
 # Last line
 EOF
 
-# Writing to ssmtp config files.
-cat > "/etc/ssmtp/ssmtp.conf" <<EOF
-root=${CRON_MAIL_USER}
-AuthUser=${CRON_MAIL_USER}
-AuthPass=${CRON_MAIL_PASSWORD}
-mailhub=${SMTP_HOSTNAME}:${SMTP_PORT}
-hostname=${HOSTNAME}
-FromLineOverride=NO
+chmod 600 /var/spool/cron/crontabs/root
+
+# Writing to msmtp config files.
+cat > "/root/.msmtprc" <<EOF
+defaults
+auth on
+tls on
+tls_certcheck off
+
+account        cron
+host           ${SMTP_HOSTNAME}
+port           ${SMTP_PORT}
+from           ${CRON_MAIL_USER}
+user           ${CRON_MAIL_USER}
+password       ${CRON_MAIL_PASSWORD}
+
+account default : cron
 
 EOF
 
-cat > "/etc/ssmtp/revaliases" <<EOF
-root:${CRON_MAIL_USER}:${SMTP_HOSTNAME}:${SMTP_PORT}
+chmod 600 /root/.msmtprc
 
-EOF
-
-# Starting crond. "-L /proc/1/fd/1" is needed for redirecting cron logs to docker logs.
-exec crond -f -l 6 -L /proc/1/fd/1
+# Starting rsyslog and crond.
+service rsyslog start
+cron -L 15
